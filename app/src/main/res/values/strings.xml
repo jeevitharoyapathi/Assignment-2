@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">New York Times</string>
+    <string name="search_hint">Enter search query</string>
+    <string name="search">Search</string>
+    <string-array name="sort_order_array">
+        <item>Oldest</item>
+        <item>Newest</item>
+    </string-array>
+</resources>
