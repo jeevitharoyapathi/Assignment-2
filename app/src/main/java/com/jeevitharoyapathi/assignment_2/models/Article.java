@@ -14,6 +14,16 @@ public class Article implements Parcelable {
     String headline;
     String thumbNail;
 
+    public String getParagraph() {
+        return paragraph;
+    }
+
+    public void setParagraph(String paragraph) {
+        this.paragraph = paragraph;
+    }
+
+    String paragraph;
+
     public String getWebUrl() {
         return webUrl;
     }
@@ -31,6 +41,7 @@ public class Article implements Parcelable {
         try {
             this.webUrl = jsonObject.getString("web_url");
             this.headline = jsonObject.getJSONObject("headline").getString("main");
+            setParagraph(jsonObject.getString("snippet"));
 
             JSONArray multimedia = jsonObject.getJSONArray("multimedia");
             if (multimedia.length() > 0) {
@@ -66,12 +77,14 @@ public class Article implements Parcelable {
         dest.writeString(this.webUrl);
         dest.writeString(this.headline);
         dest.writeString(this.thumbNail);
+        dest.writeString(getParagraph());
     }
 
     protected Article(Parcel in) {
         this.webUrl = in.readString();
         this.headline = in.readString();
         this.thumbNail = in.readString();
+        this.paragraph = in.readString();
     }
 
     public static final Parcelable.Creator<Article> CREATOR = new Parcelable.Creator<Article>() {

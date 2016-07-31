@@ -17,7 +17,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".activities.SettingsActivity"></activity>
+        <activity android:name=".activities.SettingsActivity" />
+        <activity
+            android:name=".activities.NewsDetailsActivity"
+            android:label="@string/title_activity_news_details"
+            android:parentActivityName=".activities.NewsActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.jeevitharoyapathi.assignment_2.activities.NewsActivity" />
+        </activity>
     </application>
 
 </manifest>

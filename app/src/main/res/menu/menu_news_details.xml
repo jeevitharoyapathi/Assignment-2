@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.jeevitharoyapathi.assignment_2.activities.NewsDetailsActivity">
+    <item
+        android:id="@+id/settings"
+        android:icon="@mipmap/ic_action_filter"
+        android:title="Settings"
+        app:showAsAction="ifRoom|collapseActionView" />
+</menu>

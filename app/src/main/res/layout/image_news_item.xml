@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="3dp"
+    android:clickable="true"
+    app:cardBackgroundColor="@color/colorprimary_transp"
+    app:cardCornerRadius="2dp"
+    app:cardElevation="12dp">
+
+    <LinearLayout
+        android:id="@+id/layout_news"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/book_without_palette"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/imgNewsIcon"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/nytimes" />
+
+        <TextView
+            android:id="@+id/newsTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:lines="3"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            tools:text="Title" />
+    </LinearLayout>
+</android.support.v7.widget.CardView>

@@ -9,15 +9,16 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.jeevitharoyapathi.assignment_2.R;
 import com.jeevitharoyapathi.assignment_2.models.Article;
-import com.squareup.picasso.Picasso;
+
 
 import java.util.ArrayList;
 
 public class ArticleArrayAdapter extends ArrayAdapter<Article> {
-    public ArticleArrayAdapter(Context context, ArrayList<Article> articles){
-        super(context, R.layout.item_article_result,articles);
+    public ArticleArrayAdapter(Context context, ArrayList<Article> articles) {
+        super(context, R.layout.item_article_result, articles);
     }
 
     @Override
@@ -25,26 +26,26 @@ public class ArticleArrayAdapter extends ArrayAdapter<Article> {
         //get the data item for current position.
         Article article = getItem(position);
         ArticleViewHolder articleViewHolder;
-        if(convertView == null){
+        if (convertView == null) {
             LayoutInflater inflater = LayoutInflater.from(getContext());
-            convertView = inflater.inflate(R.layout.item_article_result,parent,false);
+            convertView = inflater.inflate(R.layout.item_article_result, parent, false);
             articleViewHolder = new ArticleViewHolder();
             articleViewHolder.ivImage = (ImageView) convertView.findViewById(R.id.ivImage);
             articleViewHolder.tvTitle = (TextView) convertView.findViewById(R.id.tvTitle);
             convertView.setTag(articleViewHolder);
-        }else{
+        } else {
             articleViewHolder = (ArticleViewHolder) convertView.getTag();
         }
 
         articleViewHolder.tvTitle.setText(article.getHeadline());
         articleViewHolder.ivImage.setImageResource(0);
-        if(TextUtils.isEmpty(article.getThumbNail())){
+        if (TextUtils.isEmpty(article.getThumbNail())) {
             /*Picasso.with(getContext())
                     .load(article.getThumbNail())
                     .placeholder(R.mipmap.ic_launcher)
                     .into(articleViewHolder.ivImage);*/
-        }else{
-            Picasso.with(getContext())
+        } else {
+            Glide.with(getContext())
                     .load(article.getThumbNail())
                     .placeholder(R.mipmap.ic_launcher)
                     .into(articleViewHolder.ivImage);
@@ -53,7 +54,7 @@ public class ArticleArrayAdapter extends ArrayAdapter<Article> {
         return convertView;
     }
 
-    public static class ArticleViewHolder{
+    public static class ArticleViewHolder {
         ImageView ivImage;
         TextView tvTitle;
     }
