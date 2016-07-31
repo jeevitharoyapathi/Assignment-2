@@ -1,5 +1,6 @@
 package com.jeevitharoyapathi.assignment_2.activities;
 
+import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -10,25 +11,24 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.jeevitharoyapathi.assignment_2.R;
 import com.jeevitharoyapathi.assignment_2.adapters.NewsAdapter;
+import com.jeevitharoyapathi.assignment_2.api.ApiService;
 import com.jeevitharoyapathi.assignment_2.fragments.SettingsDialogFragment;
 import com.jeevitharoyapathi.assignment_2.models.Article;
-import com.jeevitharoyapathi.assignment_2.utils.EndlessRecyclerViewScrollListener;
+import com.jeevitharoyapathi.assignment_2.models.ArticleResponse;
 import com.jeevitharoyapathi.assignment_2.utils.RecyclerInsetsDecoration;
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.JsonHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.parceler.Parcels;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -37,23 +37,34 @@ import java.util.Set;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import cz.msebera.android.httpclient.Header;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+import rx.subscriptions.CompositeSubscription;
 
 public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnItemClickListener,
         SettingsDialogFragment.SettingsChangeListener {
     private static int mPage = 0;
-    String BASE_URL = "https://api.nytimes.com/svc/search/v2/articlesearch.json";
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
     @BindView(R.id.rvResult)
     RecyclerView gvResults;
     @BindView(R.id.text_empty_state_description)
     TextView mEmptyDescription;
-
+    private CompositeSubscription mSubscription = new CompositeSubscription();
     ArrayList<Article> mArticles;
     NewsAdapter mNewsAdapter;
-    private String mQuery = "Today's News";
+    private String mQuery = "education";
     private static SharedPreferences mSharedPreferences = null;
+    private Call<ArticleResponse> mCall;
+    private Retrofit mRetrofit;
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient mClient;
 
     @Override
     public boolean navigateUpTo(Intent upIntent) {
@@ -80,12 +91,10 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
         StaggeredGridLayoutManager staggeredGridLayoutManager = new StaggeredGridLayoutManager(2, 1);
         gvResults.addItemDecoration(new RecyclerInsetsDecoration(this));
         gvResults.setLayoutManager(new StaggeredGridLayoutManager(2, 1));
-        gvResults.addOnScrollListener(new EndlessRecyclerViewScrollListener(staggeredGridLayoutManager) {
-            @Override
-            public void onLoadMore(int page, int totalItemsCount) {
-                mPage = page;
-            }
-        });
+        mRetrofit = new Retrofit.Builder()
+                .baseUrl("https://api.nytimes.com/svc/search/v2/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
         getNewsInfo(mQuery);
 
     }
@@ -121,7 +130,7 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
         filterItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
-                android.app.DialogFragment editDialogFragment = SettingsDialogFragment.newInstance(NewsActivity.this);
+                DialogFragment editDialogFragment = SettingsDialogFragment.newInstance(NewsActivity.this);
                 editDialogFragment.show(getFragmentManager().beginTransaction(), "Settings");
                 return true;
             }
@@ -129,62 +138,32 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
         return super.onCreateOptionsMenu(menu);
     }
 
-    private void getNewsInfo(String query) {
-        AsyncHttpClient client = new AsyncHttpClient();
-        String url = BASE_URL;
-
-        RequestParams params = new RequestParams();
-        mSharedPreferences = getDefaultSharedPreferences();
-        params.put("api-key", "a1734ed3d6684ce2b370229df108119d");
-        params.put("page", 0);
-        params.put("q", query);
-        if (mSharedPreferences.getLong("Date", 0) != 0)
-            params.put("begin_date", getDate(mSharedPreferences.getLong("Date", 0)));
-        Set<String> set = mSharedPreferences.getStringSet("Categories", null);
-        if (set != null && !set.isEmpty()) {
-            List<String> cat = new ArrayList<String>(set);
-            String categories = "news_desk:(";
-            for (String string : cat) {
-                categories = categories + '"' + string + '"';
-            }
-            categories = categories + ")";
-            params.put("fq", categories);
+    private void handleArticlesObserver(ArticleResponse articles) {
+        mArticles.clear();
+        if (articles == null || articles.getResult() == null || articles.getResult().getArticles() == null)
+            mArticles = null;
+        else
+            mArticles.addAll(articles.getResult().getArticles());
+        if (mArticles == null || mArticles.isEmpty()) {
+            mEmptyDescription.setVisibility(View.VISIBLE);
+            gvResults.setVisibility(View.GONE);
+        } else {
+            mEmptyDescription.setVisibility(View.GONE);
+            gvResults.setVisibility(View.VISIBLE);
         }
-        params.put("sort", mSharedPreferences.getString("Sort", "Oldest"));
-        client.get(url, params, new JsonHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                JSONArray articleJsonResults = null;
-                try {
-                    mArticles.clear();
-                    articleJsonResults = response.getJSONObject("response").getJSONArray("docs");
-                    mArticles.addAll(Article.fromJSONArray(articleJsonResults));
-                    if (mArticles.isEmpty()) {
-                        mEmptyDescription.setVisibility(View.VISIBLE);
-                        gvResults.setVisibility(View.GONE);
-                    } else {
-                        mEmptyDescription.setVisibility(View.GONE);
-                        gvResults.setVisibility(View.VISIBLE);
-                    }
-                    mNewsAdapter.notifyDataSetChanged();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                super.onFailure(statusCode, headers, throwable, errorResponse);
-            }
-        });
+        mNewsAdapter.notifyDataSetChanged();
     }
 
     @Override
     public void onItemClick(Article article, int type) {
         Intent intent = new Intent(this, NewsDetailsActivity.class);
-        intent.putExtra(NewsDetailsActivity.ARTICLE, article);
+        intent.putExtra(NewsDetailsActivity.ARTICLE, Parcels.wrap(article));
         startActivity(intent);
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     @Override
@@ -194,8 +173,61 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
 
     public static String getDate(long date) {
         if (date == 0)
-            return "";
+            return null;
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         return dateFormat.format(date);
+    }
+
+    public void getNewsInfo
+            (String query) {
+        mSharedPreferences = getDefaultSharedPreferences();
+        Set<String> set = mSharedPreferences.getStringSet("Categories", null);
+        String categories = null;
+        if (set != null && !set.isEmpty()) {
+            List<String> cat = new ArrayList<String>(set);
+            categories = "news_desk:(";
+            for (String string : cat) {
+                categories = categories + '"' + string + '"';
+            }
+            categories = categories + ")";
+        }
+        ApiService apiService =
+                mRetrofit.create(ApiService.class);
+        mCall = apiService.getArticles("a1734ed3d6684ce2b370229df108119d",
+                query
+                , getDate(mSharedPreferences.getLong("Date", 0))
+                , categories
+                , mSharedPreferences.getString("Sort", null)
+                , mPage
+        );
+        mCall.enqueue(new Callback<ArticleResponse>() {
+            @Override
+            public void onResponse(final Call<ArticleResponse> call, final Response<ArticleResponse> response) {
+                mArticles.clear();
+                if (!response.isSuccessful()) {
+                    mEmptyDescription.setVisibility(View.VISIBLE);
+                    gvResults.setVisibility(View.GONE);
+                    mNewsAdapter.notifyDataSetChanged();
+                    return;
+                }
+                final ArticleResponse result = response.body();
+                if (result == null || result.getResult() == null
+                        || result.getResult().getArticles().isEmpty()) {
+                    mEmptyDescription.setVisibility(View.VISIBLE);
+                    gvResults.setVisibility(View.GONE);
+                    return;
+                }
+                mArticles.addAll(result.getResult().getArticles());
+                mEmptyDescription.setVisibility(View.GONE);
+                gvResults.setVisibility(View.VISIBLE);
+                mNewsAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onFailure(final Call<ArticleResponse> call, final Throwable t) {
+                Toast.makeText(NewsActivity.this, "Error Ocurred while downloading news" + call.toString(), Toast.LENGTH_SHORT).show();
+                Log.e(NewsActivity.class.getSimpleName(), t.getMessage());
+            }
+        });
     }
 }

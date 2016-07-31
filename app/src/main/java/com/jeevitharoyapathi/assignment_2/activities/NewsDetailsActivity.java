@@ -16,6 +16,8 @@ import android.widget.ProgressBar;
 import com.jeevitharoyapathi.assignment_2.R;
 import com.jeevitharoyapathi.assignment_2.models.Article;
 
+import org.parceler.Parcels;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
@@ -35,7 +37,7 @@ public class NewsDetailsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_news_details);
         ButterKnife.bind(this);
-        mArticle = getIntent().getParcelableExtra(ARTICLE);
+        mArticle = Parcels.unwrap(getIntent().getParcelableExtra(ARTICLE));
        // mToolbar=(Toolbar) layout_toolBar.findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);

@@ -1,15 +1,10 @@
 package com.jeevitharoyapathi.assignment_2.models;
 
-import android.os.Parcelable;
-
 import com.google.gson.annotations.SerializedName;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.parceler.Parcel;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Parcel
@@ -20,8 +15,12 @@ public class Article {
     @SerializedName("headline")
     Map<String, String> headline;
 
+    public void setThumbNail(List<Media> thumbNail) {
+        this.thumbNail = thumbNail;
+    }
+
     @SerializedName("multimedia")
-    String thumbNail;
+    List<Media> thumbNail;
 
     @SerializedName("lead_paragraph")
     String paragraph;
@@ -43,37 +42,11 @@ public class Article {
     }
 
     public String getThumbNail() {
-        return thumbNail;
-    }
-
-
-    public Article(JSONObject jsonObject) {
-        try {
-            this.webUrl = jsonObject.getString("web_url");
-            this.headline = jsonObject.getJSONObject("headline");
-            setParagraph(jsonObject.getString("lead_paragraph"));
-
-            JSONArray multimedia = jsonObject.getJSONArray("multimedia");
-            if (multimedia.length() > 0) {
-                JSONObject multimediaObj = multimedia.getJSONObject(0);
-                this.thumbNail = "http://www.nytimes.com/" + multimediaObj.getString("url");
-            } else {
-                this.thumbNail = "";
-            }
-        } catch (JSONException e) {
-
+        if (thumbNail.size() > 0) {
+            return "http://www.nytimes.com/" + thumbNail.get(0).getUrl();
+        } else {
+            return "";
         }
     }
 
-    public static ArrayList<Article> fromJSONArray(JSONArray array) {
-        ArrayList<Article> results = new ArrayList<>();
-        for (int i = 0; i < array.length(); i++) {
-            try {
-                results.add(new Article(array.getJSONObject(i)));
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-        return results;
-    }
 }
