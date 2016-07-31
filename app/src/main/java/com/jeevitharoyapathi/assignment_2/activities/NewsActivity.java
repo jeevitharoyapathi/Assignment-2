@@ -20,6 +20,7 @@ import com.jeevitharoyapathi.assignment_2.R;
 import com.jeevitharoyapathi.assignment_2.adapters.NewsAdapter;
 import com.jeevitharoyapathi.assignment_2.fragments.SettingsDialogFragment;
 import com.jeevitharoyapathi.assignment_2.models.Article;
+import com.jeevitharoyapathi.assignment_2.utils.EndlessRecyclerViewScrollListener;
 import com.jeevitharoyapathi.assignment_2.utils.RecyclerInsetsDecoration;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
@@ -40,10 +41,7 @@ import cz.msebera.android.httpclient.Header;
 
 public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnItemClickListener,
         SettingsDialogFragment.SettingsChangeListener {
-
-    public static final String SEARCH = "search";
-    public static final int SEARCH_REQUEST = 121;
-    public static final String TAG = NewsActivity.class.getSimpleName();
+    private static int mPage = 0;
     String BASE_URL = "https://api.nytimes.com/svc/search/v2/articlesearch.json";
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
@@ -79,8 +77,15 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
         mNewsAdapter = new NewsAdapter(this, mArticles);
         mNewsAdapter.setOnClickListener(this);
         gvResults.setAdapter(mNewsAdapter);
+        StaggeredGridLayoutManager staggeredGridLayoutManager = new StaggeredGridLayoutManager(2, 1);
         gvResults.addItemDecoration(new RecyclerInsetsDecoration(this));
         gvResults.setLayoutManager(new StaggeredGridLayoutManager(2, 1));
+        gvResults.addOnScrollListener(new EndlessRecyclerViewScrollListener(staggeredGridLayoutManager) {
+            @Override
+            public void onLoadMore(int page, int totalItemsCount) {
+                mPage = page;
+            }
+        });
         getNewsInfo(mQuery);
 
     }
@@ -145,7 +150,6 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
             categories = categories + ")";
             params.put("fq", categories);
         }
-
         params.put("sort", mSharedPreferences.getString("Sort", "Oldest"));
         client.get(url, params, new JsonHttpResponseHandler() {
             @Override
@@ -178,6 +182,7 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
     @Override
     public void onItemClick(Article article, int type) {
         Intent intent = new Intent(this, NewsDetailsActivity.class);
+        intent.putExtra(NewsDetailsActivity.ARTICLE, article);
         startActivity(intent);
 
     }

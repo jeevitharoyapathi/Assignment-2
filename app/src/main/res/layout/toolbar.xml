@@ -5,10 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_gravity="end"
-    android:logo="@drawable/nytimes"
     android:background="@color/colorPrimary"
+    android:logo="@drawable/nytimes"
     android:minHeight="?attr/actionBarSize"
     app:popupTheme="@style/AppTheme.PopupOverlay"
     app:theme="@style/AppTheme.AppBarOverlay"
-    app:titleTextColor="@android:color/white">
-</android.support.v7.widget.Toolbar>
+    app:titleTextColor="@android:color/white"></android.support.v7.widget.Toolbar>

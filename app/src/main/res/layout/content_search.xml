@@ -27,6 +27,5 @@
         android:layout_height="match_parent"
         android:layout_alignParentTop="true"
         android:layout_below="@+id/text_empty_state_description"
-        android:background="@color/colorPrimary"
-        android:scrollbars="vertical" />
+        android:background="@color/colorPrimary" />
 </RelativeLayout>

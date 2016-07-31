@@ -1,18 +1,30 @@
 package com.jeevitharoyapathi.assignment_2.models;
 
-import android.os.Parcel;
 import android.os.Parcelable;
+
+import com.google.gson.annotations.SerializedName;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.parceler.Parcel;
 
 import java.util.ArrayList;
+import java.util.Map;
 
-public class Article implements Parcelable {
+@Parcel
+public class Article {
+    @SerializedName("web_url")
     String webUrl;
-    String headline;
+
+    @SerializedName("headline")
+    Map<String, String> headline;
+
+    @SerializedName("multimedia")
     String thumbNail;
+
+    @SerializedName("lead_paragraph")
+    String paragraph;
 
     public String getParagraph() {
         return paragraph;
@@ -22,14 +34,12 @@ public class Article implements Parcelable {
         this.paragraph = paragraph;
     }
 
-    String paragraph;
-
     public String getWebUrl() {
         return webUrl;
     }
 
     public String getHeadline() {
-        return headline;
+        return headline.get("main");
     }
 
     public String getThumbNail() {
@@ -40,8 +50,8 @@ public class Article implements Parcelable {
     public Article(JSONObject jsonObject) {
         try {
             this.webUrl = jsonObject.getString("web_url");
-            this.headline = jsonObject.getJSONObject("headline").getString("main");
-            setParagraph(jsonObject.getString("snippet"));
+            this.headline = jsonObject.getJSONObject("headline");
+            setParagraph(jsonObject.getString("lead_paragraph"));
 
             JSONArray multimedia = jsonObject.getJSONArray("multimedia");
             if (multimedia.length() > 0) {
@@ -66,36 +76,4 @@ public class Article implements Parcelable {
         }
         return results;
     }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(this.webUrl);
-        dest.writeString(this.headline);
-        dest.writeString(this.thumbNail);
-        dest.writeString(getParagraph());
-    }
-
-    protected Article(Parcel in) {
-        this.webUrl = in.readString();
-        this.headline = in.readString();
-        this.thumbNail = in.readString();
-        this.paragraph = in.readString();
-    }
-
-    public static final Parcelable.Creator<Article> CREATOR = new Parcelable.Creator<Article>() {
-        @Override
-        public Article createFromParcel(Parcel source) {
-            return new Article(source);
-        }
-
-        @Override
-        public Article[] newArray(int size) {
-            return new Article[size];
-        }
-    };
 }

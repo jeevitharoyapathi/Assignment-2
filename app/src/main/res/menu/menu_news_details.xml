@@ -1,10 +1,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.jeevitharoyapathi.assignment_2.activities.NewsDetailsActivity">
-    <item
-        android:id="@+id/settings"
-        android:icon="@mipmap/ic_action_filter"
-        android:title="Settings"
-        app:showAsAction="ifRoom|collapseActionView" />
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".BookSearchActivity">
+
+    <item android:id="@+id/action_share"
+        android:orderInCategory="5"
+        android:title="@string/share"
+        android:icon="@mipmap/ic_share"
+        app:showAsAction="always"/>
 </menu>
