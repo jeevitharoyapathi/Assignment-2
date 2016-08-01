@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
@@ -19,13 +20,14 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.jeevitharoyapathi.assignment_2.R;
 import com.jeevitharoyapathi.assignment_2.adapters.NewsAdapter;
 import com.jeevitharoyapathi.assignment_2.api.ApiService;
 import com.jeevitharoyapathi.assignment_2.fragments.SettingsDialogFragment;
 import com.jeevitharoyapathi.assignment_2.models.Article;
 import com.jeevitharoyapathi.assignment_2.models.ArticleResponse;
+import com.jeevitharoyapathi.assignment_2.utils.EndlessRecyclerViewScrollListener;
+import com.jeevitharoyapathi.assignment_2.utils.NetworkUtils;
 import com.jeevitharoyapathi.assignment_2.utils.RecyclerInsetsDecoration;
 
 import org.parceler.Parcels;
@@ -42,7 +44,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import rx.subscriptions.CompositeSubscription;
 
 public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnItemClickListener,
         SettingsDialogFragment.SettingsChangeListener {
@@ -53,18 +54,13 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
     RecyclerView gvResults;
     @BindView(R.id.text_empty_state_description)
     TextView mEmptyDescription;
-    private CompositeSubscription mSubscription = new CompositeSubscription();
+
     ArrayList<Article> mArticles;
     NewsAdapter mNewsAdapter;
     private String mQuery = "education";
     private static SharedPreferences mSharedPreferences = null;
     private Call<ArticleResponse> mCall;
     private Retrofit mRetrofit;
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-    private GoogleApiClient mClient;
 
     @Override
     public boolean navigateUpTo(Intent upIntent) {
@@ -90,11 +86,18 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
         gvResults.setAdapter(mNewsAdapter);
         StaggeredGridLayoutManager staggeredGridLayoutManager = new StaggeredGridLayoutManager(2, 1);
         gvResults.addItemDecoration(new RecyclerInsetsDecoration(this));
-        gvResults.setLayoutManager(new StaggeredGridLayoutManager(2, 1));
+        gvResults.setLayoutManager(staggeredGridLayoutManager);
         mRetrofit = new Retrofit.Builder()
                 .baseUrl("https://api.nytimes.com/svc/search/v2/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
+        gvResults.addOnScrollListener(new EndlessRecyclerViewScrollListener(staggeredGridLayoutManager) {
+            @Override
+            public void onLoadMore(int page, int totalItemsCount) {
+                mPage = page;
+                getNewsInfo(mQuery);
+            }
+        });
         getNewsInfo(mQuery);
 
     }
@@ -116,6 +119,8 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
             @Override
             public boolean onQueryTextSubmit(String query) {
                 searchView.clearFocus();
+                mPage = 0;
+                mArticles.clear();
                 mQuery = query;
                 getNewsInfo(query);
                 return true;
@@ -168,6 +173,8 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
 
     @Override
     public void onSettingsChanged() {
+        mArticles.clear();
+        mPage=0;
         getNewsInfo(mQuery);
     }
 
@@ -180,17 +187,13 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
 
     public void getNewsInfo
             (String query) {
-        mSharedPreferences = getDefaultSharedPreferences();
-        Set<String> set = mSharedPreferences.getStringSet("Categories", null);
-        String categories = null;
-        if (set != null && !set.isEmpty()) {
-            List<String> cat = new ArrayList<String>(set);
-            categories = "news_desk:(";
-            for (String string : cat) {
-                categories = categories + '"' + string + '"';
-            }
-            categories = categories + ")";
+        if (!NetworkUtils.isNetworkAvailable(this)) {
+            Toast.makeText(NewsActivity.this,
+                    "Network Not Available", Toast.LENGTH_SHORT).show();
+            handleEmptyResult();
         }
+        mSharedPreferences = getDefaultSharedPreferences();
+        String categories = getCategories();
         ApiService apiService =
                 mRetrofit.create(ApiService.class);
         mCall = apiService.getArticles("a1734ed3d6684ce2b370229df108119d",
@@ -203,23 +206,16 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
         mCall.enqueue(new Callback<ArticleResponse>() {
             @Override
             public void onResponse(final Call<ArticleResponse> call, final Response<ArticleResponse> response) {
-                mArticles.clear();
-                if (!response.isSuccessful()) {
-                    mEmptyDescription.setVisibility(View.VISIBLE);
-                    gvResults.setVisibility(View.GONE);
-                    mNewsAdapter.notifyDataSetChanged();
-                    return;
+                if (isResultSucess(response)) {
+                    final ArticleResponse result = response.body();
+                    mArticles.addAll(result.getResult().getArticles());
+                    mEmptyDescription.setVisibility(View.GONE);
+                    gvResults.setVisibility(View.VISIBLE);
                 }
-                final ArticleResponse result = response.body();
-                if (result == null || result.getResult() == null
-                        || result.getResult().getArticles().isEmpty()) {
-                    mEmptyDescription.setVisibility(View.VISIBLE);
-                    gvResults.setVisibility(View.GONE);
-                    return;
+                else
+                {
+                    handleEmptyResult();
                 }
-                mArticles.addAll(result.getResult().getArticles());
-                mEmptyDescription.setVisibility(View.GONE);
-                gvResults.setVisibility(View.VISIBLE);
                 mNewsAdapter.notifyDataSetChanged();
             }
 
@@ -229,5 +225,39 @@ public class NewsActivity extends AppCompatActivity implements NewsAdapter.OnIte
                 Log.e(NewsActivity.class.getSimpleName(), t.getMessage());
             }
         });
+    }
+
+    private boolean isResultSucess(Response<ArticleResponse> response) {
+        if (!response.isSuccessful()) {
+            return false;
+        }
+        final ArticleResponse result = response.body();
+        if (result == null || result.getResult() == null
+                || result.getResult().getArticles() == null
+                || result.getResult().getArticles().isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
+    @Nullable
+    private String getCategories() {
+        Set<String> set = mSharedPreferences.getStringSet("Categories", null);
+        String categories = null;
+        if (set != null && !set.isEmpty()) {
+            List<String> cat = new ArrayList<String>(set);
+            categories = "news_desk:(";
+            for (String string : cat) {
+                categories = categories + '"' + string + '"';
+            }
+            categories = categories + ")";
+        }
+        return categories;
+    }
+
+    private void handleEmptyResult() {
+        mArticles.clear();
+        mEmptyDescription.setVisibility(View.VISIBLE);
+        gvResults.setVisibility(View.GONE);
     }
 }

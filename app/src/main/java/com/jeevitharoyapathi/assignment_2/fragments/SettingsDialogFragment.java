@@ -101,7 +101,7 @@ public class SettingsDialogFragment extends DialogFragment {
         Set<String> set = mSharedPreference.getStringSet("Categories", null);
         if (set != null && !set.isEmpty()) {
             mArts.setChecked(set.contains("Arts"));
-            mFashion.setChecked(set.contains("Fashion"));
+            mFashion.setChecked(set.contains(getString(R.string.Fashion)));
             mSports.setChecked(set.contains("Sports"));
         }
     }
@@ -116,7 +116,7 @@ public class SettingsDialogFragment extends DialogFragment {
             set.add("Arts");
         }
         if (mFashion.isChecked()) {
-            set.add("Fashion");
+            set.add(getString(R.string.Fashion));
         }
         if (mSports.isChecked()) {
             set.add("Sports");

@@ -87,7 +87,7 @@
                     android:id="@+id/cbFashion"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Fashion" />
+                    android:text="@string/Fashion" />
 
                 <CheckBox
                     android:id="@+id/cbSports"

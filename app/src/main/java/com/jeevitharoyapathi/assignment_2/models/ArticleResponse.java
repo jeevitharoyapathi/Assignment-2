@@ -32,41 +32,7 @@ public class ArticleResponse {
         @SerializedName("docs")
         private List<Article> mArticles;
 
-        public metaData getMeta() {
-            return mMeta;
-        }
-
-        public void setMeta(metaData meta) {
-            mMeta = meta;
-        }
-
-        @SerializedName("meta")
-        private metaData mMeta;
 
     }
 
-    public static class metaData {
-
-        @SerializedName("hits")
-        private int mHits;
-
-        @SerializedName("offset")
-        private int mOffset;
-
-        public int getHits() {
-            return mHits;
-        }
-
-        public void setHits(final int hits) {
-            mHits = hits;
-        }
-
-        public int getOffset() {
-            return mOffset;
-        }
-
-        public void setOffset(final int offset) {
-            mOffset = offset;
-        }
-    }
 }
